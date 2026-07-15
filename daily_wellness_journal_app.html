@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Daily Wellness Journal</title>
+<style>
+  :root{
+    --pink:#f7a9bb; --pink-soft:#fff0f4; --sage:#a9bd8f; --sage-soft:#f1f6ec;
+    --ink:#2d2b2b; --line:#e9ded7; --paper:#fffdf9; --shadow:0 14px 36px rgba(74,56,49,.12);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#f7f3ef;color:var(--ink);font-family:ui-rounded,"SF Pro Rounded","Segoe UI",Arial,sans-serif}
+  button,input,textarea{font:inherit}
+  .app{max-width:980px;margin:auto;padding:18px}
+  header{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:14px}
+  h1{font-family:"Snell Roundhand","Segoe Script",cursive;font-size:clamp(30px,6vw,50px);font-weight:500;margin:0}
+  .subtitle{font-size:13px;color:#736963}
+  .top-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+  button,.file-label{border:1px solid var(--line);background:white;border-radius:999px;padding:10px 14px;cursor:pointer;box-shadow:0 3px 10px rgba(74,56,49,.06)}
+  button.primary{background:var(--pink);border-color:var(--pink);color:white;font-weight:700}
+  button.danger{color:#a33}
+  .layout{display:grid;grid-template-columns:290px 1fr;gap:16px}
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow)}
+  .calendar{padding:16px;height:max-content;position:sticky;top:12px}
+  .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .cal-title{font-weight:800}
+  .week,.days{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;text-align:center}
+  .week{font-size:11px;color:#8c817a;margin-bottom:6px}
+  .day{aspect-ratio:1;border-radius:12px;border:0;background:transparent;padding:0;box-shadow:none;position:relative}
+  .day:hover{background:var(--pink-soft)}
+  .day.selected{background:var(--pink);color:white;font-weight:800}
+  .day.has-entry::after{content:"";width:5px;height:5px;background:var(--sage);border-radius:50%;position:absolute;bottom:5px;left:50%;transform:translateX(-50%)}
+  .day.selected.has-entry::after{background:white}
+  .day.other{opacity:.28}
+  .legend{font-size:12px;color:#766b65;margin-top:12px}
+  .journal{padding:18px}
+  .date-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;border-bottom:2px dashed var(--pink);padding-bottom:14px;margin-bottom:14px}
+  .date-row input{flex:1;min-width:180px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .section{border:1px solid var(--line);border-radius:18px;padding:14px;background:white}
+  .section h2{font-family:"Segoe Print","Bradley Hand",cursive;font-size:19px;margin:0 0 10px}
+  .section.pink{border-style:dashed;border-color:var(--pink)}
+  .section.sage{border-color:#cbd7be}
+  label{display:block;font-size:13px;font-weight:700;margin:8px 0 5px}
+  input[type="text"],input[type="number"],input[type="date"],textarea,select{
+    width:100%;border:1px solid #dfd5cf;border-radius:12px;padding:10px;background:#fffefa;outline:none
+  }
+  input:focus,textarea:focus,select:focus{border-color:var(--pink);box-shadow:0 0 0 3px var(--pink-soft)}
+  textarea{min-height:64px;resize:vertical}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .three{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .checks{display:grid;gap:7px}
+  .checks label{font-weight:500;margin:0;display:flex;gap:8px;align-items:center}
+  input[type="checkbox"]{width:19px;height:19px;accent-color:var(--pink)}
+  .drops{display:flex;gap:7px;flex-wrap:wrap}
+  .drop{width:34px;height:42px;border:2px solid #333;border-radius:55% 55% 58% 58% / 70% 70% 35% 35%;transform:rotate(45deg);background:white;cursor:pointer;box-shadow:none;padding:0}
+  .drop.filled{background:#9fd5ee}
+  .drop span{display:none}
+  .full{grid-column:1/-1}
+  .footer-note{text-align:center;background:var(--pink-soft);border-radius:16px;padding:10px;margin-top:14px;letter-spacing:1px;font-size:12px}
+  .status{font-size:12px;color:#6f655f;margin-left:auto}
+  .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+  .stat{background:var(--sage-soft);border-radius:14px;padding:10px;text-align:center}
+  .stat b{display:block;font-size:20px}
+  @media(max-width:760px){
+    .layout{grid-template-columns:1fr}
+    .calendar{position:relative;top:auto}
+    .grid{grid-template-columns:1fr}
+    .full{grid-column:auto}
+    .top-actions{justify-content:flex-start}
+    header{align-items:flex-start;flex-direction:column}
+  }
+  @media print{
+    body{background:white}.calendar,.top-actions,.subtitle,.status{display:none!important}
+    .layout{display:block}.journal{box-shadow:none;border:0;padding:0}.app{padding:0}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div>
+      <h1>♡ daily wellness journal ♡</h1>
+      <div class="subtitle">Your private daily calendar journal — entries save on this device.</div>
+    </div>
+    <div class="top-actions">
+      <button id="todayBtn">Today</button>
+      <button id="printBtn">Print</button>
+      <button id="exportBtn">Export backup</button>
+      <label class="file-label">Import backup<input id="importFile" type="file" accept=".json" hidden></label>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="calendar card">
+      <div class="cal-head">
+        <button id="prevMonth" aria-label="Previous month">‹</button>
+        <div class="cal-title" id="calTitle"></div>
+        <button id="nextMonth" aria-label="Next month">›</button>
+      </div>
+      <div class="week"><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div><div>Sun</div></div>
+      <div class="days" id="calendarDays"></div>
+      <div class="legend">A green dot means you have saved an entry for that day.</div>
+      <div class="summary">
+        <div class="stat"><b id="monthEntries">0</b>logs</div>
+        <div class="stat"><b id="monthSteps">0</b>avg steps</div>
+        <div class="stat"><b id="monthWater">0</b>avg water</div>
+      </div>
+    </aside>
+
+    <main class="journal card">
+      <div class="date-row">
+        <label for="entryDate" style="margin:0">Date</label>
+        <input id="entryDate" type="date">
+        <span class="status" id="saveStatus">Ready</span>
+        <button class="danger" id="deleteBtn">Delete day</button>
+      </div>
+
+      <div class="grid">
+        <section class="section">
+          <h2>♡ Morning & sleep</h2>
+          <div class="two">
+            <div><label>Morning weight (kg)</label><input data-field="weight" type="number" step="0.1"></div>
+            <div><label>Sleep (hours)</label><input data-field="sleepHours" type="number" step="0.1"></div>
+          </div>
+          <label>Sleep quality /10</label><input data-field="sleepQuality" type="number" min="1" max="10">
+        </section>
+
+        <section class="section">
+          <h2>✿ Movement</h2>
+          <label>Steps</label><input data-field="steps" type="number">
+          <label>Exercise</label><textarea data-field="exercise"></textarea>
+        </section>
+
+        <section class="section">
+          <h2>💧 Water intake</h2>
+          <div class="drops" id="waterDrops"></div>
+          <div class="subtitle" style="margin-top:8px">Tap each empty droplet as you finish a glass.</div>
+        </section>
+
+        <section class="section sage">
+          <h2>Nutrition goals</h2>
+          <div class="checks">
+            <label><input data-check="nutrition1" type="checkbox"><input data-field="nutritionText1" type="text" placeholder="Write your own goal"></label>
+            <label><input data-check="nutrition2" type="checkbox"><input data-field="nutritionText2" type="text" placeholder="Write your own goal"></label>
+            <label><input data-check="nutrition3" type="checkbox"><input data-field="nutritionText3" type="text" placeholder="Write your own goal"></label>
+            <label><input data-check="nutrition4" type="checkbox"><input data-field="nutritionText4" type="text" placeholder="Write your own goal"></label>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2>♡ Meals</h2>
+          <label>Breakfast</label><textarea data-field="breakfast"></textarea>
+          <label>Lunch</label><textarea data-field="lunch"></textarea>
+          <label>Dinner</label><textarea data-field="dinner"></textarea>
+          <label>Snacks</label><textarea data-field="snacks"></textarea>
+          <label>Calories consumed</label><input data-field="calories" type="number" placeholder="e.g. 1,550">
+        </section>
+
+        <section class="section pink">
+          <h2>Wegovy</h2>
+          <label>Dose</label><input data-field="dose" type="text" placeholder="e.g. 0.25 mg">
+          <label>Injection site</label>
+          <select data-field="injectionSite">
+            <option value="">Select...</option><option>Left thigh</option><option>Right thigh</option>
+            <option>Left stomach</option><option>Right stomach</option><option>Left arm</option><option>Right arm</option>
+          </select>
+          <label>Side effects</label><textarea data-field="sideEffects"></textarea>
+          <label>Appetite today /10</label><input data-field="appetite" type="number" min="1" max="10">
+        </section>
+
+        <section class="section">
+          <h2>♡ Mood & energy</h2>
+          <div class="three">
+            <div><label>Mood /10</label><input data-field="mood" type="number" min="1" max="10"></div>
+            <div><label>Energy /10</label><input data-field="energy" type="number" min="1" max="10"></div>
+            <div><label>Stress /10</label><input data-field="stress" type="number" min="1" max="10"></div>
+          </div>
+          <h2 style="margin-top:15px">Digestion</h2>
+          <div class="checks two">
+            <label><input data-check="digNormal" type="checkbox">Normal</label>
+            <label><input data-check="digConstipation" type="checkbox">Constipation</label>
+            <label><input data-check="digDiarrhoea" type="checkbox">Diarrhoea</label>
+            <label><input data-check="digNausea" type="checkbox">Nausea</label>
+            <label><input data-check="digBloating" type="checkbox">Bloating</label>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2>☆ Today's win</h2>
+          <textarea data-field="todayWin"></textarea>
+          <h2 style="margin-top:14px">Reminders to myself</h2>
+          <textarea data-field="reminders"></textarea>
+        </section>
+
+        <section class="section full sage">
+          <h2>✿ Reflection</h2>
+          <div class="two">
+            <div><label>What went well?</label><textarea data-field="wentWell"></textarea></div>
+            <div><label>What could I improve tomorrow?</label><textarea data-field="improveTomorrow"></textarea></div>
+          </div>
+        </section>
+      </div>
+
+      <div class="footer-note">♡ PROGRESS OVER PERFECTION. ONE HEALTHY CHOICE AT A TIME. ♡</div>
+    </main>
+  </div>
+</div>
+
+<script>
+const KEY='dailyWellnessJournalV1';
+let entries=JSON.parse(localStorage.getItem(KEY)||'{}');
+let selected=new Date();
+let calendarMonth=new Date(selected.getFullYear(),selected.getMonth(),1);
+const pad=n=>String(n).padStart(2,'0');
+const iso=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const parseISO=s=>{const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
+const fields=[...document.querySelectorAll('[data-field]')];
+const checks=[...document.querySelectorAll('[data-check]')];
+const status=document.getElementById('saveStatus');
+
+function emptyEntry(){return {water:0};}
+function current(){return entries[iso(selected)]||emptyEntry();}
+function save(){
+  const key=iso(selected), data=current();
+  fields.forEach(el=>data[el.dataset.field]=el.value);
+  checks.forEach(el=>data[el.dataset.check]=el.checked);
+  data.water=Number(data.water||0);
+  entries[key]=data;
+  localStorage.setItem(KEY,JSON.stringify(entries));
+  status.textContent='Saved ✓';
+  setTimeout(()=>status.textContent='Ready',900);
+  renderCalendar();
+}
+function load(){
+  const data=current();
+  document.getElementById('entryDate').value=iso(selected);
+  fields.forEach(el=>el.value=data[el.dataset.field]??'');
+  checks.forEach(el=>el.checked=Boolean(data[el.dataset.check]));
+  renderDrops(Number(data.water||0));
+}
+function renderDrops(count){
+  const wrap=document.getElementById('waterDrops'); wrap.innerHTML='';
+  for(let i=1;i<=9;i++){
+    const b=document.createElement('button'); b.className='drop'+(i<=count?' filled':'');
+    b.title=`${i} glass${i===1?'':'es'}`; b.onclick=()=>{const d=current();d.water=(i===count?i-1:i);entries[iso(selected)]=d;save();load()};
+    wrap.appendChild(b);
+  }
+}
+function renderCalendar(){
+  const y=calendarMonth.getFullYear(),m=calendarMonth.getMonth();
+  document.getElementById('calTitle').textContent=calendarMonth.toLocaleDateString(undefined,{month:'long',year:'numeric'});
+  const grid=document.getElementById('calendarDays'); grid.innerHTML='';
+  const first=(new Date(y,m,1).getDay()+6)%7;
+  const start=new Date(y,m,1-first);
+  let monthKeys=[];
+  for(let i=0;i<42;i++){
+    const d=new Date(start); d.setDate(start.getDate()+i);
+    const k=iso(d); const b=document.createElement('button');
+    b.className='day'+(d.getMonth()!==m?' other':'')+(k===iso(selected)?' selected':'')+(entries[k]?' has-entry':'');
+    b.textContent=d.getDate();
+    b.onclick=()=>{selected=d;calendarMonth=new Date(d.getFullYear(),d.getMonth(),1);load();renderCalendar()};
+    grid.appendChild(b);
+    if(d.getMonth()===m && entries[k]) monthKeys.push(k);
+  }
+  document.getElementById('monthEntries').textContent=monthKeys.length;
+  const avg=(arr)=>arr.length?Math.round(arr.reduce((a,b)=>a+b,0)/arr.length):0;
+  document.getElementById('monthSteps').textContent=avg(monthKeys.map(k=>Number(entries[k].steps||0)).filter(Boolean)).toLocaleString();
+  document.getElementById('monthWater').textContent=avg(monthKeys.map(k=>Number(entries[k].water||0)).filter(Boolean));
+}
+fields.forEach(el=>el.addEventListener('input',save));
+checks.forEach(el=>el.addEventListener('change',save));
+document.getElementById('entryDate').addEventListener('change',e=>{selected=parseISO(e.target.value);calendarMonth=new Date(selected.getFullYear(),selected.getMonth(),1);load();renderCalendar()});
+document.getElementById('prevMonth').onclick=()=>{calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()-1,1);renderCalendar()};
+document.getElementById('nextMonth').onclick=()=>{calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()+1,1);renderCalendar()};
+document.getElementById('todayBtn').onclick=()=>{selected=new Date();calendarMonth=new Date(selected.getFullYear(),selected.getMonth(),1);load();renderCalendar()};
+document.getElementById('printBtn').onclick=()=>window.print();
+document.getElementById('deleteBtn').onclick=()=>{if(confirm('Delete this day’s entry?')){delete entries[iso(selected)];localStorage.setItem(KEY,JSON.stringify(entries));load();renderCalendar()}};
+document.getElementById('exportBtn').onclick=()=>{
+ const blob=new Blob([JSON.stringify(entries,null,2)],{type:'application/json'});
+ const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='wellness-journal-backup.json';a.click();URL.revokeObjectURL(a.href);
+};
+document.getElementById('importFile').addEventListener('change',async e=>{
+ const file=e.target.files[0];if(!file)return;
+ try{entries=JSON.parse(await file.text());localStorage.setItem(KEY,JSON.stringify(entries));load();renderCalendar();alert('Backup imported.')}
+ catch{alert('That backup file could not be read.')}
+});
+selected=new Date(); load(); renderCalendar();
+</script>
+</body>
+</html>
